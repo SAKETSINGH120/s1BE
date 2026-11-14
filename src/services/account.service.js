@@ -2,13 +2,14 @@ import bcrypt from 'bcrypt';
 import { Collection } from '../models/collection.model.js';
 import { Environment } from '../models/environment.model.js';
 import { Folder } from '../models/folder.model.js';
+import { MockRoute } from '../models/mockRoute.model.js';
 import { RequestHistory } from '../models/requestHistory.model.js';
 import { SavedRequest } from '../models/savedRequest.model.js';
 import { User } from '../models/user.model.js';
 import { Workspace } from '../models/workspace.model.js';
 import { AppError } from '../utils/AppError.js';
 
-const WORKSPACE_MODELS = [SavedRequest, Folder, Collection, Environment, RequestHistory];
+const WORKSPACE_MODELS = [SavedRequest, Folder, Collection, Environment, RequestHistory, MockRoute];
 
 // Mongo internals and ownership ids are not useful outside Relay.
 const OMITTED_FIELDS = new Set(['_id', '__v', 'workspaceId', 'ownerId']);
@@ -28,12 +29,13 @@ export async function exportAccountData(user) {
   const exported = await Promise.all(
     workspaces.map(async (workspace) => {
       const scope = { workspaceId: workspace._id };
-      const [collections, folders, requests, environments, history] = await Promise.all([
+      const [collections, folders, requests, environments, history, mocks] = await Promise.all([
         Collection.find(scope).lean(),
         Folder.find(scope).lean(),
         SavedRequest.find(scope).lean(),
         Environment.find(scope).lean(),
         RequestHistory.find(scope).sort({ createdAt: -1 }).lean(),
+        MockRoute.find(scope).lean(),
       ]);
 
       return {
@@ -54,6 +56,7 @@ export async function exportAccountData(user) {
           ),
         })),
         history: history.map(clean),
+        mocks: mocks.map(clean),
       };
     }),
   );

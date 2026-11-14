@@ -4,6 +4,7 @@ import * as environmentController from '../controllers/environment.controller.js
 import * as executionController from '../controllers/execution.controller.js';
 import * as folderController from '../controllers/folder.controller.js';
 import * as historyController from '../controllers/history.controller.js';
+import * as mockController from '../controllers/mock.controller.js';
 import * as savedRequestController from '../controllers/savedRequest.controller.js';
 import * as workspaceController from '../controllers/workspace.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
@@ -22,6 +23,7 @@ import {
 } from '../validators/environment.validators.js';
 import { executeRequestSchema } from '../validators/execution.validators.js';
 import { createHistorySchema } from '../validators/history.validators.js';
+import { createMockSchema, updateMockSchema } from '../validators/mock.validators.js';
 import {
   createSavedRequestSchema,
   updateSavedRequestSchema,
@@ -95,6 +97,17 @@ scoped
   .post(validateBody(createHistorySchema), historyController.createHistoryEntry)
   .delete(historyController.clearHistory);
 scoped.delete('/history/:entryId', historyController.deleteHistoryEntry);
+
+scoped
+  .route('/mocks')
+  .get(mockController.listMocks)
+  .post(validateBody(createMockSchema), mockController.createMock);
+// Registered before /mocks/:mockId so 'rotate-key' is not read as an id.
+scoped.post('/mocks/rotate-key', mockController.rotateMockKey);
+scoped
+  .route('/mocks/:mockId')
+  .patch(validateBody(updateMockSchema), mockController.updateMock)
+  .delete(mockController.deleteMock);
 
 scoped.post(
   '/execute',

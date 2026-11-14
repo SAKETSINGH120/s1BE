@@ -296,3 +296,28 @@ Anywhere `{{name}}` works (URL, params, headers, auth, body, assertion values), 
 | `{{$randomName}}` / `{{$randomEmail}}` | `Grace Hopper` / `grace.k3j9xa@example.com` |
 
 Assertions also support the `isType` operator, with `expected` one of `string`, `number`, `boolean`, `null`, `array`, `object`.
+
+## Mocks 🔒
+
+Each workspace has a secret `mockKey`. Mocks are served publicly at `/api/v1/m/<mockKey><path>`.
+
+| Method   | Path                                        | Description                                                         |
+| -------- | ------------------------------------------- | ------------------------------------------------------------------- |
+| `GET`    | `/workspaces/:workspaceId/mocks`            | `{ mockKey, mocks }`; creates the key on first use                  |
+| `POST`   | `/workspaces/:workspaceId/mocks`            | Create a mock (201); 409 for a duplicate method + path, or over 200 |
+| `PATCH`  | `/workspaces/:workspaceId/mocks/:mockId`    | Update; `chaos` fields are merged into the stored settings          |
+| `DELETE` | `/workspaces/:workspaceId/mocks/:mockId`    | Delete (204)                                                        |
+| `POST`   | `/workspaces/:workspaceId/mocks/rotate-key` | New `mockKey`; old URLs stop working                                |
+
+Mock fields: `name`, `method` (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`), `path` (`/orders/:id`; normalized), `status` (100–599), `headers` (`[{ key, value }]`, up to 50; `Set-Cookie`, CSP, CORS, `Content-Length` and hop-by-hop headers are rejected), `body` (up to 256 KB; `{{params.x}}`, `{{query.x}}` and dynamic variables such as `{{$uuid}}` are filled per request), `enabled`, and `chaos`:
+
+| Chaos field          | Effect                                                       |
+| -------------------- | ------------------------------------------------------------ |
+| `delayMs`            | Waits 0–10000 ms before answering                            |
+| `failureRate`        | 0–100: percentage of requests answered with `failureStatus`  |
+| `failureStatus`      | 500, 502, 503, 504 or 429                                    |
+| `rateLimitPerMinute` | After this many requests in a minute, 429 with `Retry-After` |
+
+### Serving
+
+Any method on `/api/v1/m/<mockKey>/<path>` is matched against the workspace's enabled mocks (`HEAD` uses `GET` mocks; exact segments win over `:params`). No match returns 404. CORS is open (`*`, no credentials), and requests are limited to 300 per minute per mock key and IP. Every response carries `Content-Security-Policy: sandbox; default-src 'none'`, `X-Content-Type-Options: nosniff` and `X-Reqora-Mock: true`, so a mock body can never run script with the API's origin or set cookies on it. Content-Type defaults to JSON when the body parses as JSON, otherwise plain text.

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Collection } from '../models/collection.model.js';
 import { Environment } from '../models/environment.model.js';
 import { Folder } from '../models/folder.model.js';
+import { MockRoute } from '../models/mockRoute.model.js';
 import { RequestHistory } from '../models/requestHistory.model.js';
 import { SavedRequest } from '../models/savedRequest.model.js';
 import { Workspace } from '../models/workspace.model.js';
@@ -57,7 +58,7 @@ export async function deleteWorkspace(workspace) {
 
   const scope = { workspaceId: workspace._id };
   await Promise.all(
-    [SavedRequest, Folder, Collection, Environment, RequestHistory].map((Model) =>
+    [SavedRequest, Folder, Collection, Environment, RequestHistory, MockRoute].map((Model) =>
       Model.deleteMany(scope),
     ),
   );

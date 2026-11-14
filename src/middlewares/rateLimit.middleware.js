@@ -1,4 +1,4 @@
-import { rateLimit } from 'express-rate-limit';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { env } from '../config/env.js';
 
 const ONE_MINUTE = 60 * 1000;
@@ -24,6 +24,14 @@ export const apiLimiter = createLimiter({
 export const authLimiter = createLimiter({
   limit: 20,
   message: 'Too many authentication attempts, please try again later',
+});
+
+// Public mock URLs are called by users' own apps, so they are limited per mock key and caller.
+export const mockLimiter = createLimiter({
+  windowMs: ONE_MINUTE,
+  limit: 300,
+  keyGenerator: (req) => `mock:${req.path.split('/')[1]}:${ipKeyGenerator(req.ip)}`,
+  message: 'Too many requests to this mock. Wait a moment and try again.',
 });
 
 // Outbound requests are the most expensive operation, so they are limited per user, not per IP.

@@ -7,6 +7,7 @@ import { requireAuth } from './middlewares/auth.middleware.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 import { apiLimiter } from './middlewares/rateLimit.middleware.js';
 import { apiRouter } from './routes/index.js';
+import { mockRouter } from './routes/mock.routes.js';
 
 export function createApp() {
   const app = express();
@@ -15,6 +16,8 @@ export function createApp() {
   app.disable('x-powered-by');
 
   app.use(helmet());
+  // Public mock URLs have their own open CORS policy and rate limit, so they come first.
+  app.use('/api/v1/m', mockRouter);
   app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
   app.use('/api', apiLimiter);
   app.use(cookieParser());
